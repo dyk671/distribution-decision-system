@@ -4,29 +4,35 @@ from services.qa_service import answer_question, get_example_questions
 
 st.set_page_config(page_title="人工问答", page_icon="💬", layout="wide")
 
+st.markdown(
+    """
+    <style>
+    .section-title {font-size: 1.1rem; font-weight: 600; color: #1f3b57; margin-top: 0.6rem;}
+    .panel {background: #ffffff; border: 1px solid #d9e4ef; border-radius: 12px; padding: 12px 14px;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.title("人工问答")
-st.caption("用于演示自然语言问答、证据路径展示与会话历史记录。")
+st.caption("问题输入—回答展示—证据来源—历史记录的知识增强问答展示页面")
 
 if "qa_history" not in st.session_state:
     st.session_state.qa_history = []
 if "qa_current" not in st.session_state:
     st.session_state.qa_current = None
 
-st.markdown("### 输入区")
-input_col, btn_col = st.columns([4, 1])
-with input_col:
+st.markdown('<div class="section-title">一、输入区</div>', unsafe_allow_html=True)
+with st.container(border=True):
     question = st.text_input("请输入问题", key="qa_input", placeholder="例如：绝缘子污闪有哪些常见诱因？")
-with btn_col:
-    submit = st.button("提交问题", type="primary", use_container_width=True)
+    submit = st.button("提交问题", type="primary")
 
-st.markdown("#### 示例问题")
-example_cols = st.columns(3)
-for idx, q in enumerate(get_example_questions()):
-    with example_cols[idx % 3]:
-        if st.button(q, key=f"example_{idx}", use_container_width=True):
-            st.session_state["qa_input"] = q
-            question = q
-            submit = True
+    with st.expander("示例问题（点击填充）", expanded=True):
+        for idx, q in enumerate(get_example_questions()):
+            if st.button(q, key=f"example_{idx}"):
+                st.session_state["qa_input"] = q
+                question = q
+                submit = True
 
 if submit and question.strip():
     result = answer_question(question, use_mock=True)
@@ -38,27 +44,30 @@ if submit and question.strip():
     st.session_state.qa_current = current_item
     st.session_state.qa_history.append(current_item)
 
-st.markdown("### 回答展示区")
+st.markdown('<div class="section-title">二、回答展示区</div>', unsafe_allow_html=True)
 if st.session_state.qa_current:
-    with st.container(border=True):
-        st.write(f"**当前问题：**{st.session_state.qa_current['question']}")
-        st.write(f"**回答内容：**{st.session_state.qa_current['answer']}")
+    st.markdown(
+        f"""<div class='panel'>
+        <b>当前问题：</b>{st.session_state.qa_current['question']}<br><br>
+        <b>回答内容：</b>{st.session_state.qa_current['answer']}
+        </div>""",
+        unsafe_allow_html=True,
+    )
 else:
     st.info("提交问题后将在此显示当前回答。")
 
-st.markdown("### 证据来源区")
+st.markdown('<div class="section-title">三、证据来源区</div>', unsafe_allow_html=True)
 if st.session_state.qa_current:
-    with st.container(border=True):
-        st.caption(st.session_state.qa_current["evidence"])
+    st.markdown(f"<div class='panel'>{st.session_state.qa_current['evidence']}</div>", unsafe_allow_html=True)
 else:
-    st.info("提交问题后将在此显示对应证据路径。")
+    st.info("提交问题后将在此显示证据路径。")
 
-st.markdown("### 历史记录区")
+st.markdown('<div class="section-title">四、历史记录区</div>', unsafe_allow_html=True)
 if st.session_state.qa_history:
-    with st.expander("展开查看历史问答", expanded=True):
+    with st.expander("展开查看历史问答", expanded=False):
         for idx, item in enumerate(reversed(st.session_state.qa_history), 1):
             with st.container(border=True):
-                st.write(f"**第 {idx} 条**｜{item['question']}")
+                st.write(f"**第 {idx} 条问题：** {item['question']}")
                 st.write(item["answer"])
                 st.caption(item["evidence"])
 else:
